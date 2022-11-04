@@ -4,6 +4,8 @@ public class Sudoku
 {
     public int[][] Table { get; set; }
     private int[][][] Possibilities { get; set; }
+    private int[][][] RowPossibilities { get; set; }
+    private int[][][] ColPossibilities { get; set; }
     private int Dimension, SquareDimension;
 
     /// <summary>
@@ -44,7 +46,6 @@ public class Sudoku
         Table = matrix;
     }
 
-
     private int[] FindMissing(int row, int col)
     {
         int squareRowStart = (row / SquareDimension) * SquareDimension;
@@ -55,7 +56,6 @@ public class Sudoku
         {
             possibilities[i] = i + 1;
         }
-        
 
         for (int r = squareRowStart; r < squareRowStart + SquareDimension; r++)
         {
@@ -81,7 +81,102 @@ public class Sudoku
         return possibilities.Where(p => !set.Contains(p)).ToArray();
     }
 
-    private void FillPossibilities()
+    public bool FindAndFillOnlyPossibilitiesInRow(int row)
+    {
+        Dictionary<int, KeyValuePair<int, int>> occurence = new Dictionary<int, KeyValuePair<int, int>>();
+        List<int> bannedNumbers = new List<int>();
+
+        for (int col = 0; col < Dimension; col++)
+        {
+            if (Possibilities[row][col] is not null)
+            {
+                foreach (var number in Possibilities[row][col])
+                {
+                    if (!bannedNumbers.Contains(number))
+                    {
+                        if (occurence.ContainsKey(number))
+                        {
+                            bannedNumbers.Add(number);
+                            occurence.Remove(number);
+                        }
+                        else
+                        {
+                            occurence.Add(number, new KeyValuePair<int, int>(row, col));
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach (var number in occurence)
+        {
+            Table[number.Value.Key][number.Value.Value] = number.Key;
+        }
+
+        return occurence.Count > 0;
+    }
+
+    public bool FindAndFillOnlyPossibilitiesInCol(int col)
+    {
+        Dictionary<int, KeyValuePair<int, int>> occurence = new Dictionary<int, KeyValuePair<int, int>>();
+        List<int> bannedNumbers = new List<int>();
+
+        for (int row = 0; row < Dimension; row++)
+        {
+            if (Possibilities[row][col] is not null)
+            {
+                foreach (var number in Possibilities[row][col])
+                {
+                    if (!bannedNumbers.Contains(number))
+                    {
+                        if (occurence.ContainsKey(number))
+                        {
+                            bannedNumbers.Add(number);
+                            occurence.Remove(number);
+                        }
+                        else
+                        {
+                            occurence.Add(number, new KeyValuePair<int, int>(row, col));
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach (var number in occurence)
+        {
+            Table[number.Value.Key][number.Value.Value] = number.Key;
+        }
+
+        return occurence.Count > 0;
+    }
+
+    private bool FindSinglePossibilitiesAndFillTable()
+    {
+        bool found = false;
+        for (int row = 0; row < Dimension; row++)
+        {
+            for (int col = 0; col < Dimension; col++)
+            {
+                if (Possibilities[row][col] is not null && Possibilities[row][col].Length == 1)
+                {
+                    Table[row][col] = Possibilities[row][col][0];
+                    found = true;
+                }
+            }
+
+            found = FindAndFillOnlyPossibilitiesInRow(row) || found;
+        }
+
+        for (int col = 0; col < Dimension; col++)
+        {
+            found = FindAndFillOnlyPossibilitiesInCol(col) || found;
+        }
+
+        return found;
+    }
+
+    private bool FillPossibilities()
     {
         for (int row = 0; row < Dimension; row++)
         {
@@ -92,24 +187,28 @@ public class Sudoku
             }
         }
 
-        Console.WriteLine();
+        return FindSinglePossibilitiesAndFillTable();
     }
 
-    private void FindSinglePossibilitiesAndPrint()
+    public void Solve()
+    {
+        while (true)
+        {
+            while (FillPossibilities()) ;
+            Console.WriteLine();
+        }
+    }
+
+    public void Print()
     {
         for (int row = 0; row < Dimension; row++)
         {
             for (int col = 0; col < Dimension; col++)
             {
-                if (Possibilities[row][col] is not null && Possibilities[row][col].Length == 1)
-                    Console.WriteLine(row + " " + col + " -> " + Possibilities[row][col][0]);
+                Console.Write(Table[row][col]);
             }
-        }
-    }
 
-    public void Solve()
-    {
-        FillPossibilities();
-        FindSinglePossibilitiesAndPrint();
+            Console.WriteLine();
+        }
     }
 }

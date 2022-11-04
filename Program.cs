@@ -19,3 +19,4 @@ sudoku.FillByMatrix(new[]
 });
 
 sudoku.Solve();
+sudoku.Print();
